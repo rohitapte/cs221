@@ -1,0 +1,417 @@
+<head>
+  <title>Text Reconstruction</title>
+  <script src="plugins/main.js"></script>
+  <script src="grader-auto.js"></script>
+  <script src="grader-manual.js"></script>
+
+  <style type="text/css">
+    .nl { font-family:monospace; }
+  </style>
+</head>
+
+<body onload="onLoad('reconstruct', 'Yang Yuan', 1)">
+
+<div id="assignmentHeader"></div>
+
+<p><img src="holykeys.png"/></p>
+
+<p>
+  In this homework, we consider two 
+  tasks: <i>word segmentation</i> and <i>vowel insertion</i>.
+
+  Word segmentation often comes up when processing many non-English
+  languages, in which words might not be flanked by spaces on either
+  end, such as written Chinese or long compound German
+  words.<sup><a href="#fn-1">[1]</a></sup>
+
+  Vowel insertion is relevant for languages like Arabic or Hebrew,
+  where modern script eschews notations for vowel sounds
+  and the human reader infers them from
+  context.<sup><a href="#fn-2">[2]</a></sup> More generally, this is an
+  instance of a reconstruction problem with a lossy encoding and some
+  context.
+</p>
+<p>
+  We already know how to optimally solve any particular
+  search problem with graph search algorithms such as
+  uniform cost search or A*.  Our goal here is modeling &mdash; that is,
+  converting real-world tasks into state-space search problems.
+</p>
+
+<!------------------------------------------------------------>
+<div class="problemTitle">Setup: $n$-gram language models and
+uniform-cost search</div>
+
+<p>
+  Our algorithm will base segmentation and insertion decisions 
+  on the cost of processed text according to a <i>language model</i>.
+  A language model is some function of the processed text that
+  captures its fluency.
+</p>
+
+<p>
+  A very common language model in NLP is an $n$-gram sequence model. This is a
+  function that, given $n$ consecutive words, gives a cost based on
+  to the negative likelihood that the $n$-th word appears just after the first
+  $n-1$.<sup><a href="#fn-3">[3]</a></sup>
+
+  The cost will always be positive, and lower costs indicate better
+  fluency.<sup><a href="#fn-4">[4]</a></sup>
+  As a simple example: in a case where $n=2$ and $c$ is our
+  $n$-gram cost function, $c($<span class="nl">big</span>, <span class="nl">fish</span>$)$ 
+  would be low, but $c($<span class="nl">fish</span>, <span class="nl">fish</span>$)$ 
+  would be fairly high.
+</p>
+<p>
+  Furthermore, these costs are additive; for a unigram model $u$ ($n = 1$),
+  the cost assigned to $[w_1, w_2, w_3, w_4]$ is
+ \[
+   u(w_1) + u(w_2) + u(w_3) + u(w_4).
+  \]
+
+  For a bigram model $b$ ($n = 2$), the cost is
+   \[
+    b(w_0, w_1) +
+    b(w_1, w_2) +
+    b(w_2, w_3) +
+    b(w_3, w_4)
+  \]
+  where $w_0$ is <code>-BEGIN-</code>, a special token that denotes the beginning of the sentence.
+</p>
+
+<p>
+  We have estimated $u$ and $b$ based on the statistics of $n$-grams in text. Note that any words not in the
+  corpus are automatically assigned a high cost, so you do not have to worry about
+  this part.
+</p>
+
+<p>
+  A note on low-level efficiency and expectations: this assignment was
+  designed considering input sequences of length no greater than
+  roughly 200 (characters, or list items, depending on the task).  Of
+  course, it's great if programs tractably manage larger inputs,
+  but it isn't expected that such inputs not lead to inefficiency
+  due to overwhelming state space growth.
+</p>
+
+<!------------------------------------------------------------>
+<div class="problemTitle">Problem 1: word segmentation</div>
+
+<p>
+  In word segmentation, you are given as input a string of
+  alphabetical characters (<code>[a-z]</code>) without whitespace, and
+  your goal is to insert spaces into this string such that the result
+  is the most fluent according to the language model.
+</p>
+
+<ol class="problem">
+
+<li class="writeup">
+  <p> [2 points] Consider the following greedy algorithm:
+  Begin at the front of the string.  Find the
+  ending position for the next word that minimizes the
+  language model cost.
+  Repeat, beginning at the end of this chosen segment.
+
+  <p>
+    Show that this greedy search is suboptimal.  In particular,
+    provide an example input string on which the greedy approach would
+    fail to find the lowest-cost segmentation of the input. 
+  </p>
+
+  <p>
+    In creating this example, you are free to design the $n$-gram cost
+    function (both the choice of $n$ and the cost of any $n$-gram
+    sequences) but costs must be positive and lower cost should
+    indicate better fluency. Note that the cost function doesn't need to 
+    be explicitly defined. You can just point out the relative cost of 
+    different word sequences that are relevant to the example you provide.
+    And your example should be based on a realistic 
+    English word sequence &mdash; don't simply use abstract symbols with 
+    designated costs.
+  </p>
+
+</li>
+
+<li class="code">
+  <p>
+     [10 points] Implement an algorithm that, unlike greedy, finds the optimal word
+    segmentation of an input character sequence.  Your algorithm
+    will consider costs based simply on a unigram cost function.
+  </p>
+  <p>
+    Before jumping into code, you should think about how to frame
+    this problem as a state-space search problem.  How would you
+    represent a state?  What are the successors of a state?  What are
+    the state transition costs?  (You don't need to answer these
+    questions in your writeup.)
+  </p>
+  <p>
+    Uniform
+    cost search (UCS) is implemented for you, and you should make use of
+    it here.<sup><a href="#fn-5">[5]</a></sup>
+  </p>
+  <p>
+    Fill in the member functions of
+    the <code>SegmentationProblem</code> class and
+    the <code>segmentWords</code> function.
+
+    The argument <code>unigramCost</code> is a function that takes in
+    a single string representing a word and outputs its unigram cost. 
+    You can assume that all the inputs would be in lower case.
+
+    The function <code>segmentWords</code> should return the segmented
+    sentence with spaces as delimiters, i.e. <code>' '.join(words)</code>.
+
+  </p>
+  <p>
+    For convenience, you can actually run <code>python
+    submission.py</code> to enter a console in which you can type
+    character sequences that will be segmented by your implementation
+    of <code>segmentWords</code>.  To request a segmentation,
+    type <code>seg mystring</code> into the prompt.  For example:
+    <pre>
+      >> seg thisisnotmybeautifulhouse
+
+        Query (seg): thisisnotmybeautifulhouse
+
+        this is not my beautiful house
+    </pre>
+    Console commands other than <code>seg</code> &mdash;
+    namely <code>ins</code> and <code>both</code> &mdash; will be used for
+    the upcoming parts of the assignment.  Other commands that might
+    help with debugging can be found by typing <code>help</code> at
+    the prompt.
+  </p>
+  <p>
+    You are encouraged to refer to <code>NumberLineSearchProblem</code> and <code>GridSearchProblem</code>
+    implemented in util.py for reference. They don't contribute to testing your
+    submitted code but only serve as a guideline for what your code should look like.
+  </p>
+</li>
+
+</ol>
+
+<!------------------------------------------------------------>
+<div class="problemTitle">Problem 2: vowel insertion</div>
+
+<p>
+  Now you are given a sequence of English words with their vowels
+  missing (A, E, I, O, and U; never Y).  Your task is to place vowels
+  back into these words in a way that maximizes sentence fluency
+  (i.e., that minimizes sentence cost).  For this task, you will use a
+  bigram cost function.
+</p>
+<p>
+  You are also given a mapping <code>possibleFills</code> that maps
+  any vowel-free word to a set of possible reconstructions (complete
+  words).<sup><a href="#fn-6">[6]</a></sup> For
+  example, <code>possibleFills('fg')</code>
+  returns <code>set(['fugue', 'fog'])</code>.
+</p>
+
+<ol class="problem">
+
+<li class="writeup">
+  <p>
+   [2 points] Consider the following greedy-algorithm: from left to right, repeatedly pick the immediate-best vowel insertion for current vowel-free word given the insertion that was chosen for the previous vowel-free word. This algorithm does not take into account future insertions beyond the current word.
+  </p>
+  <p>
+  Show, as in question 1, that this greedy algorithm is suboptimal, by providing a realistic counter-example using English text. Make any assumptions you'd like about possibleFills and the bigram cost function, but bigram costs must remain positive.
+  </p>
+</li>
+
+<li class="code">
+  <p>
+     [10 points] Implement an algorithm that finds optimal vowel insertions.  Use
+    the UCS subroutines.
+  </p>
+  <p>
+    When you've completed your implementation, the
+    function <code>insertVowels</code> should return the reconstructed
+    word sequence as a string with space delimiters, i.e.
+    <code>' '.join(filledWords)</code>. Assume that you have a list of strings as
+    the input, i.e. the sentence has already been split into words for you. Note
+    that empty string is a valid element of the list.
+  </p>
+  <p>
+    The argument <code>queryWords</code> is the input sequence of
+    vowel-free words.  Note that the empty string is a valid such
+    word.  The argument <code>bigramCost</code> is a function that
+    takes two strings representing two sequential words and provides
+    their bigram score.  The special out-of-vocabulary
+    beginning-of-sentence word <code>-BEGIN-</code> is given
+    by <code>wordsegUtil.SENTENCE_BEGIN</code>.  The
+    argument <code>possibleFills</code> is a function that takes a word
+    as string and returns a <code>set</code> of
+    reconstructions.
+  </p>
+  <p>
+    Since we use a limited corpus, some seemingly obvious
+    strings may have no filling, eg chclt -> {}, where chocolate is actually
+    a valid filling. Dont worry about these cases.
+  </p>
+  <p>
+    <b>Note:</b> If some vowel-free word $w$
+    has no reconstructions according to <code>possibleFills</code>,
+    your implementation should consider $w$ itself as the sole
+    possible reconstruction.
+  </p>
+  <p>
+    Use the <code>ins</code> command in the program console to try
+    your implementation.  For example:
+    <pre>
+      >> ins thts m n th crnr
+
+        Query (ins): thts m n th crnr
+
+        thats me in the corner
+    </pre>
+    The console strips away any vowels you do insert, so you can
+    actually type in plain English and the vowel-free query will be
+    issued to your program.  This also means that you can use a single
+    vowel letter as a means to place an empty string in the sequence.
+    For example:
+    <pre>
+      >> ins its a beautiful day in the neighborhood
+
+        Query (ins): ts  btfl dy n th nghbrhd
+
+        its a beautiful day in the neighborhood
+    </pre>
+  </p>
+</li>
+
+</ol>
+
+<!------------------------------------------------------------>
+<div class="problemTitle">Problem 3: putting it together</div>
+
+<p>
+  We'll now see that it's possible to solve both of these tasks at
+  once.  This time, you are given a whitespace- and vowel-free string
+  of alphabetical characters.  Your goal is to insert spaces and
+  vowels into this string such that the result is as fluent as possible.
+  As in the previous task, costs are based on a bigram cost function.
+</p>
+
+<ol class="problem">
+
+<li class="writeup">
+  <p> [2 points] Consider a search problem for finding the optimal space and
+  vowel insertions. Formalize the problem as a search problem; what
+  are the states, actions, costs, initial state, and end test? Try to find a
+  minimal representation of the states. 
+  </p>
+
+</li>
+
+<li class="code">
+  <p>
+     [20 points] Implement an algorithm that finds the optimal space and
+    vowel insertions.  Use the UCS subroutines.
+  </p>
+  <p>
+    When you've completed your implementation, the
+    function <code>segmentAndInsert</code> should return a segmented
+    and reconstructed word sequence as a string with space delimiters,
+    i.e. <code>' '.join(filledWords)</code>.
+  </p>
+  <p>
+    The argument <code>query</code> is the input string of space- and
+    vowel-free words.  The argument <code>bigramCost</code> is a
+    function that takes two strings representing two sequential words
+    and provides their bigram score.  The special out-of-vocabulary
+    beginning-of-sentence word <code>-BEGIN-</code> is given
+    by <code>wordsegUtil.SENTENCE_BEGIN</code>.  The
+    argument <code>possibleFills</code> is a function; it takes a word
+    as string and returns a <code>set</code> of reconstructions.
+  </p>
+  <p>
+    <b>Note:</b> Unlike in problem 2, where a vowel-free word
+    could (under certain circumstances) be considered a valid
+    reconstruction of itself, here you should only include in
+    your output words that are the reconstruction of some vowel-free
+    word according to <code>possibleFills</code>.  Additionally, you
+    should not include words containing only vowels such as "a" or "i";
+    all words should include at least one consonant from the input string.
+  </p>
+  <p>
+    Use the command <code>both</code> in the program console to try
+    your implementation.  For example:
+    <pre>
+      >> both mgnllthppl
+
+        Query (both): mgnllthppl
+
+        imagine all the people
+    </pre>
+  </p>
+</li>
+
+<li class="writeup">
+  <p>[4 points] 
+    Let's find a way to speed up joint space and vowel insertion with A*.
+    Recall that having to score an output using a bigram model $b(w', w)$
+    is more expensive than using a unigram model $u(w)$ because we have to remember
+    the previous word $w'$ in the state. 
+    Given the bigram model $b$ (a function that takes any $(w',w)$ and returns a number),
+    define a unigram model $u_b$ (a function that takes any $w$ and returns a number)
+    based on $b$.
+    Now define a heuristic $h$ based on solving a simpler
+    minimum cost path problem with $u_b$, and prove that $h$ is consistent.
+  </p>
+  <p>
+    To show that $h$ is consistent, construct a relaxed search problem.
+    Recall that a search problem $P'$ with cost function $\text{Cost}'(s,a)$ is a relaxation of a search problem $P$
+    with cost function $\text{Cost}(s,a)$ if they have the same states and actions
+    and $\text{Cost}'(s,a) \le \text{Cost}(s,a)$ for all states $s$ and actions $a$.
+    Explicitly define the states, actions, cost, start state, and end test of the relaxation.
+  </p>
+  <p>
+    <b>Example:</b> we could define $u_b(w) = \sum_{w'} b(w',w)$,
+    where $w'$ ranges over possible previous word $w'$.
+    However, this heuristic is not consistent.
+  </p>
+  <p>
+      <b>Note:</b> Don't confuse $u_b$ defined here with the unigram cost function $u$
+      used in Problem 1.
+  </p>
+
+</li>
+
+</ol>
+
+<hr/>
+<p id="fn-1"> [1]
+  In German, <i>Windschutzscheibenwischer</i> is "windshield wiper".
+  Broken into parts: <i>wind</i> ~ wind; <i>schutz</i> ~ block /
+  protection; <i>scheiben</i> ~ panes; <i>wischer</i> ~ wiper.
+</p>
+<p id="fn-2"> [2]
+  See <a href="https://en.wikipedia.org/wiki/Abjad">https://en.wikipedia.org/wiki/Abjad</a>.
+</p>
+<p id="fn-3"> [3]
+  This model works under the assumption that text roughly satisfies
+  the <a href="https://en.wikipedia.org/wiki/Markov_property">Markov
+  property</a>.
+</p>
+<p id="fn-4"> [4]
+  Modulo edge cases, the $n$-gram model score in this assignment is
+  given by $\ell(w_1, \ldots, w_n) = -\log(p(w_n \mid w_1, \ldots,
+  w_{n-1}))$.  Here, $p(\cdot)$ is an estimate of the conditional
+  probability distribution over words given the sequence of previous
+  $n-1$ words.  This estimate is gathered from frequency counts taken
+  by reading Leo Tolstoy's <i>War and Peace</i> and William
+  Shakespeare's <i>Romeo and Juliet</i>.
+</p>
+<p id="fn-5"> [5]
+  Solutions that use UCS ought to exhibit fairly fast execution time
+  for this problem, so using A* here is unnecessary.
+</p>
+<p id="fn-6"> [6]
+  This mapping, too, was obtained by reading Tolstoy and Shakespeare
+  and removing vowels.
+</p>
+
+</body>

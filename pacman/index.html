@@ -1,0 +1,328 @@
+<head>
+  <title>Multi-agent Pac-Man</title>
+  <script src="plugins/main.js"></script>
+  <script src="grader-all.js"></script>
+  
+<link rel="stylesheet" type="text/css" href="plugins/main.css" />
+</head>
+
+<body onload="onLoad('pacman', 'Zhi Bie', 1)">
+<!------------------------------------------------------------>
+<div id="assignmentHeader"></div>
+
+<blockquote>
+<center>
+<img src="pacman_multi_agent.png" width="359" height="197">
+</center>
+  <p><cite><center>Pac-Man, now with ghosts.<br>
+  Minimax, Expectimax.<br></center></cite></p>
+</blockquote>
+
+<h3>Introduction</h3>
+<p> For those of you not familiar with Pac-Man, it's a game where Pac-Man (the
+yellow circle with a mouth in the above figure) moves around in a maze and
+tries to eat as many <i>food pellets</i> (the small white dots) as possible, while
+avoiding the ghosts (the other two agents with eyes in the above figure). If Pac-Man
+eats all the food in a maze, it wins. The big white dots at the top-left and
+bottom-right corner are <i>capsules</i>, which give Pac-Man power to eat ghosts in a
+limited time window (but you won't be worrying about them for the required
+part of the assignment). You can get familiar with the setting by playing a few
+games of classic Pac-Man, which we come to just after this introduction.</p>
+
+<p>In this project, you will design agents for the classic version of Pac-Man,
+including ghosts. Along the way, you will implement both minimax and
+expectimax search.
+
+<p>The base code for this project contains a lot of files (which
+are listed towards the end of this page); you, however, <b>do not</b> need to
+go through these files to complete the assignment. These are there only to
+guide the more adventurous amongst you to the heart of Pac-Man. As in previous
+assignments, you will be modifying only <code>submission.py</code>. 
+
+<p>A basic <code>grader.py</code> has been included in the .zip file, but it only checks for timing issues, not functionality. 
+You can check that Pac-Man behave as described in the problems, and  run <code>grader.py</code>
+without timeout in order to test your implementation.
+
+<h3>Warmup</h3>
+<p>First, play a game of classic Pac-Man to get a feel for the assignment:
+
+<pre>python pacman.py</pre>
+
+You can always add <code>--frameTime 1</code> to the command line
+to run in "demo mode" where the game pauses after
+every frame.
+
+<p>Now, run the provided <code>ReflexAgent</code> in <code>submission.py</code>:
+
+<pre>python pacman.py -p ReflexAgent</pre>
+
+Note that it plays quite poorly even on simple layouts:
+
+<pre>python pacman.py -p ReflexAgent -l testClassic</pre>
+
+You can also try out the reflex agent on the default <code>mediumClassic</code> layout with one ghost or two.
+
+<pre>python pacman.py -p ReflexAgent -k 1</pre>
+
+<pre>python pacman.py -p ReflexAgent -k 2</pre>
+
+<p><em>Note:</em> you can never have more ghosts than the <a href="layouts/mediumClassic.lay">layout</a> permits.
+
+<p><em>Options:</em> Default ghosts are random; you can also play for fun with slightly smarter directional ghosts using <code>-g DirectionalGhost</code>. You can also play multiple games in a row with <code>-n</code>. Turn off graphics with <code>-q</code> to run lots of games quickly.</p> 
+
+So, now that you are familiar enough with the interface, inspect the <code>ReflexAgent</code> code carefully (in <code>submission.py</code>) and make sure you understand what it's doing. The reflex agent code provides some helpful examples of methods that query the <code>GameState</code> (a <code>GameState</code> specifies the full game state, including the food, capsules, agent configurations and score changes: see <code>submission.py</code> for further information and helper methods) for information, which you will be using in the actual coding part. We are giving an exhaustive and very detailed description below, for the sake of completeness and to save you from digging deeper into the starter code. The actual coding part is very small - so please be patient if you think there is too much writing. </br></br>
+
+Note: if you wish to run Pac-Man in the terminal using a text-based interface,
+check out the <code>terminal</code> directory.
+
+<div class="problemTitle">Problem 1: Minimax</div>
+
+<ol class="problem">
+  <li class="writeup" id="1a">
+    Before you code up Pac-Man
+    as a minimax agent, notice that instead of just
+    one adversary, Pac-Man could have multiple ghosts as adversaries. So we
+    will extend the minimax algorithm from class (which had only one min stage
+    for a single adversary) to the more general case of multiple adversaries. In
+    particular, <i>your minimax tree will have multiple min layers (one for
+      each ghost) for every max layer</i>.</br>
+<p>Specifically, consider the limited depth tree minimax search with evaluation functions
+taught in class. Suppose there
+are $n+1$ agents on the board, $a_0,\ldots , a_n$, where $a_0$ is Pac-Man and
+the rest are ghosts. Pac-Man acts as a max agent, and the ghosts act as min
+agents. A single <i>depth</i> consists of all $n+1$ agents making a move, so
+depth 2 search will involve Pac-Man and each ghost moving two times. In other
+words, a depth of 2 corresponds to a height of $2(n+1)$ in the minimax game tree.
+<p>
+Write the recurrence for
+$V_{\text{max,min}}(s,d)$ in math. You should express your answer in terms of the 
+following functions:
+$\text{IsEnd}(s)$, which tells you if $s$ is an end state;
+$\text{Utility}(s)$, the utility of a state;
+$\text{Eval}(s)$, an evaluation function for the state $s$;
+$\text{Player}(s)$, which returns the player whose turn it is;
+$\text{Actions}(s)$, which returns the possible actions;
+and $\text{Succ}(s,a)$, which returns the successor state resulting from taking an action at a certain state.
+You may use any relevant notation introduced in lecture.
+    </li>
+    <li class="code" id="1b">
+Now fill out
+<code>MinimaxAgent</code> class in
+<code>submission.py</code> using the above recurrence.
+Remember that your minimax
+agent should work with any number of ghosts, and your minimax tree should have
+multiple min layers (one for each ghost) for every max layer. </p>
+
+<p>Your code should also expand the game tree to an arbitrary depth. Score the
+leaves of your minimax tree with the supplied
+<code>self.evaluationFunction</code>, which defaults to
+<code>scoreEvaluationFunction</code>. The class
+<code>MinimaxAgent</code> extends <code>MultiAgentSearchAgent</code>, which
+gives access to <code>self.depth</code> and
+<code>self.evaluationFunction</code>. Make sure your minimax code makes
+reference to these two variables where appropriate as these variables are
+populated from the command line options. 
+
+<p>Other functions that you might use in the code:
+<code>GameState.getLegalActions()</code> which returns all the possible legal
+moves, where each move is <code>Directions.X</code> for some X in the set
+{<code>NORTH, SOUTH, WEST, EAST, STOP</code>}. Go through
+<code>ReflexAgent</code> code as suggested before to see how the above are used
+and also for other important methods like <code>GameState.getPacmanState(),
+  GameState.getGhostStates(), GameState.getScore()</code> etc. These are further documented inside
+the <code>MinimaxAgent</code> class.</p>
+
+<em><strong>Implementation Hints</strong></em>
+<ul>
+<li>Pac-Man is always agent 0, and the agents move in order of increasing agent index. 
+Use <code>self.index</code> in your minimax implementation to refer to the Pac-Man's index. 
+Notice that only Pac-Man will actually be running your <code>MinimaxAgent</code>.
+
+<li>All states in minimax should be <code>GameStates</code>, either passed in
+to <code>getAction</code> or generated via
+<code>GameState.generateSuccessor</code>. In this project, you will not be
+abstracting to simplified states.
+
+<li>The evaluation function in this part is already written (<code>self.evaluationFunction</code>), and you should call this function without changing it. Use <code>self.evaluationFunction</code> in your definition of $V_\text{max,min}$ wherever you used $\text{Eval}(s)$ in part $1a$. Recognize that now we're evaluating <i>states</i> rather than actions. Look-ahead agents evaluate future states whereas reflex agents evaluate actions from the current state. </li>
+
+<li>You can assume that you will always have at least one action returned from <code>getLegalActions</code> function.
+
+<li>If there is a tie between multiple actions for the best move, you may break the tie however you see fit.
+
+<li>The minimax values of the initial state in the <code>minimaxClassic</code> layout are 9, 8, 7, -492 for depths 1, 2, 3 and 4 respectively. <b>You can use these numbers to verify whether your implementation is correct.</b> Note that your minimax agent will often win (just under 50% of the time for us--be sure to test on a large number of games using the <code>-n</code> and <code>-q</code> flags) despite the dire prediction of depth 4 minimax.
+
+<pre>python pacman.py -p MinimaxAgent -l minimaxClassic -a depth=4</pre>
+</ul>
+<em><strong>Further Observations</strong></em>
+<ul>
+<li>On larger boards such as <code>openClassic</code> and
+<code>mediumClassic</code> (the default), you'll find Pac-Man to be good at not
+dying, but quite bad at winning. He'll often thrash around without making
+progress. He might even thrash around right next to a dot without eating it.
+Don't worry if you see this behavior. Why does Pac-Man thrash around right next to a dot?
+(These questions are here for you to ponder upon; no need to
+include in the write-up.)
+
+<li>Consider the following run:
+
+<pre>python pacman.py -p MinimaxAgent -l trappedClassic -a depth=3</pre>
+
+Why do you think Pac-Man rushes the closest ghost in minimax search on
+<code>trappedClassic</code>? 
+
+<!--
+<li>To increase the search depth achievable by your agent, remove the <code>Directions.STOP</code> action from Pac-Man's list of possible actions. Depth 2 should be pretty quick, but depth 3 or 4 will be slow. Don't worry, the next problem will speed up the search somewhat.
+
+<li>You are welcome to, but not required to, remove <code>Directions.STOP</code> as a valid action (this is true for any part of the assignment).
+-->
+
+</ul>
+
+</li>
+</ol>
+
+<div class="problemTitle">Problem 2: Alpha-beta pruning</div>
+
+<ol class="problem">
+
+<li class="code" id="2a">
+Make a new agent that uses alpha-beta
+pruning to more efficiently explore the minimax tree in
+<code>AlphaBetaAgent</code>. Again, your algorithm will be slightly more
+general than the pseudo-code in the slides, so part of the challenge is to
+extend the alpha-beta pruning logic appropriately to multiple minimizer agents. 
+
+<p>You should see a speed-up (perhaps depth 3 alpha-beta will run as fast as
+depth 2 minimax). Ideally, depth 3 on <code>mediumClassic</code> should run in
+just a few seconds per move or faster. 
+
+<pre>python pacman.py -p AlphaBetaAgent -a depth=3</pre>
+
+<p>The <code>AlphaBetaAgent</code> minimax values should be identical to the
+<code>MinimaxAgent</code> minimax values, although the actions it selects can
+vary because of different tie-breaking behavior. Again, the minimax values of
+the initial state in the <code>minimaxClassic</code> layout are 9, 8, 7, and
+-492 for depths 1, 2, 3, and 4, respectively. Running the command given above this
+paragraph, the minimax values of the initial state should be 9, 18, 27, and 36
+for depths 1, 2, 3, and 4, respectively.
+    </li>
+</ol>
+
+<div class="problemTitle">Problem 3: Expectimax</div>
+
+<ol class="problem">
+  <li class="writeup" id="3a">
+Random ghosts are of course not optimal
+minimax agents, so modeling them with minimax search is not
+optimal. Instead, write down the recurrence for $V_{\text{max,opp}}(s,d)$,
+which is the maximum expected utility against ghosts that each
+follow the random policy which chooses a legal move uniformly at random.
+Your recurrence should resemble that of Problem 1a (meaning you should write
+it in terms of the same functions that were specified in 1a). 
+    </li>
+    <li class="code" id="3b">
+Fill in <code>ExpectimaxAgent</code>, where your agent
+will no longer take the min over all ghost actions, but the expectation according to your agent's model of how the ghosts
+act. Assume Pac-Man is playing against multiple <code>RandomGhost</code>, which each chooses
+<code>getLegalActions</code> uniformly at random.
+
+<p>You should now observe a more cavalier approach to close quarters with
+ghosts. In particular, if Pac-Man perceives that he could be trapped but might
+escape to grab a few more pieces of food, he'll at least try:
+
+<pre>python pacman.py -p ExpectimaxAgent -l trappedClassic -a depth=3</pre>
+
+You may have to run this scenario a few times to see Pac-Man's gamble pay off.
+Pac-Man would win half the time on an average and for this particular command,
+the final score would be -502 if Pac-Man loses and 532 or 531 (depending on your
+tiebreaking method and the particular trial) if it wins (you can use these
+numbers to validate your implementation).
+
+<p>Why does Pac-Man's behavior in
+expectimax differ from the minimax case (i.e., why doesn't he head directly for
+the ghosts)? Again, just think about it; no need to write it up.</p>
+
+</li>
+</ol>
+
+<div class="problemTitle">Problem 4: Evaluation function (extra credit)</div>
+
+<ol class="problem">
+    <li class="code" id="4a">
+Write a better evaluation function for Pac-Man in the provided function
+<code>betterEvaluationFunction</code>.
+The evaluation function should evaluate states (rather than actions).
+You may use any tools at your disposal for evaluation, including any <code>util.py</code> code
+from the previous assignments. With depth 2 search, your evaluation function
+should clear the <code>smallClassic</code> layout with two random ghosts more
+than half the time for full credit and still run at a reasonable rate.
+
+<pre>python pacman.py -l smallClassic -p ExpectimaxAgent -a evalFn=better -q -n 10</pre>
+
+We will run your Pac-Man agent 20 times, and calculate the average score you obtained in the winning games.
+Starting from 1300, you obtain 1 point per 100 point increase in your average winning score.
+In <code>grader.py</code>, you can see the how extra credit is awarded. You get 8 extra points
+when you reach 2000 or more.
+In addition, the top 3 people in the class will get additional points.<br><br>
+
+Check out the current top scorers on the <a href="http://web.stanford.edu/class/cs221/leaderboard.html">leaderboard</a>!
+You will be added automatically when you submit.
+
+<p><em><strong>Hints and Observations</strong></em>
+<ul>
+<li>Having gone through the rest of the assignment, you should play Pac-Man again yourself and think about what kinds of features you want to add to the evaluation function. How can you add multiple features to your evaluation function?
+<li>You may want to use the reciprocal of important values rather than the values themselves for your features.</li>
+<li>The betterEvaluationFunction should run in the same time limit as the other problems.
+</ul>
+
+</li>
+  <li class="writeup" id="4b">
+    Clearly describe your evaluation function.
+    What is the high-level motivation?
+    Also talk about what else you tried, what worked and what didn't.
+	Please write your thoughts in <code>pacman.pdf</code> (not in code comments).
+  </li>
+</ol>
+
+<p><em>Go Pac-Man Go!</em></p>
+</br>
+<b>Files:</b>
+
+<table border="0" cellpadding="10">
+  
+  <tr><td><code>submission.py</code></td>
+  <td>Where all of your multi-agent search agents will reside and the only file
+    you need to concern yourself with for this assignment.</td></tr>
+  
+  <tr><td><code>pacman.py</code>
+  <td>The main file that runs Pac-Man games. This file also describes a Pac-Man <code>GameState</code> type, which you will use extensively in this project</td></tr>
+
+  <tr><td><code>game.py</code></td>
+  <td>The logic behind how the Pac-Man world works. This file describes several supporting types like AgentState, Agent, Direction, and Grid.</td></tr>
+
+  <tr><td><code>util.py</code></td>
+  <td>Useful data structures for implementing search algorithms.</td></tr>
+  <tr><td><code>graphicsDisplay.py</code></td>
+  <td>Graphics for Pac-Man</td></tr>
+    
+    <tr><td><code>graphicsUtils.py</code></td>
+  <td>Support for Pac-Man graphics</td></tr>
+
+  <tr><td><code>textDisplay.py</code></td>
+  <td>ASCII graphics for Pac-Man</td></tr>  
+
+    <tr><td><code>ghostAgents.py</code></td>
+  <td>Agents to control ghosts</td></tr>
+
+    <tr><td><code>keyboardAgents.py</code></td>
+  <td>Keyboard interfaces to control Pac-Man</td></tr>
+
+    <tr><td><code>layout.py</code></td>
+  <td>Code for reading layout files and storing their contents</td></tr>
+
+</table>
+
+<p>&nbsp;
+
+
+</body>

@@ -1,0 +1,114 @@
+a:link {text-decoration:none}
+a:visited {text-decoration:none}
+a:active {text-decoration:none}
+a:hover {text-decoration:none; color:#990000}
+body {max-width:960px}
+.active {font-weight:bold}
+.inactive {color:gray}
+
+html {font-family:"Arial"; font-size:16}
+@media print {html {font-size:12}}
+td {font-size:16}
+@media print {td {font-size:12}}
+td {vertical-align: top}
+
+.header {font-weight:bold; color:#990000; font-size:24}
+@media print {.header {font-size:20}}
+.subheader {font-weight:bold; color:#000099; font-size:20}
+@media print {.subheader {font-size:18}}
+
+.section {margin:14px}
+.top {margin-left:80px; margin-top:3px}
+.nav {font-weight:bold; font-size:20}
+@media print {.nav {font-size:16}}
+
+pre {color:#008000; margin-left:20px; font-size:12}
+code {color:#008000; font-size:14}
+@media print {pre {font-size:10}}
+.placeholder {border: 1px solid #c0daae; background-color: #ebf9d7;}
+
+table {padding:20px}
+td {padding:7px}
+
+.highlightOnHover:hover {background-color: lightgray}
+
+/* For assignments */
+.assignmentTitle {font-size:28; font-weight:bold; color:darkblue}
+.assignmentCreds {padding-top:10px; padding-bottom:10px}
+@media print {.assignmentTitle {font-size:24}}
+.problemTitle {font-size:24; color:#990000}
+@media print {.problemTitle {font-size:20}}
+.solution {margin:10; border:solid 3px gray; padding:10}
+ol.problem {margin:20; list-style-type:lower-alpha}
+ol.problem li {margin-top:10px; margin-bottom:10px}
+
+.codeImg {
+  background: url(code.png) no-repeat;
+  background-size: 20px;
+  margin-left: 10px;
+  padding-left: 30px;
+}
+.writeupImg {
+  background: url(writeup.png) no-repeat;
+  background-size: 20px;
+  margin-left: 10px;
+  padding-left: 30px;
+}
+
+/* New method for showing pencils and monitors */
+ol.problem li.code, ol.problem li.writeup, ol.problem li.both {
+  padding-left: 30px;
+  min-height: 30px;
+  position: relative;
+}
+ol.problem li.code:before, ol.problem li.writeup:before, ol.problem li.both:before {
+  position: absolute;
+  display: block;
+  left: 0;
+  top: 0;
+}
+ol.problem li.code:before {content: url('code-small.png');}
+ol.problem li.writeup:before {content: url('writeup-small.png');}
+ol.problem li.both:before {content: url('both-small.png');}
+
+/* For main home page */
+.homepageTitle {font-size:28; font-weight:bold; color:#990000}
+@media print {.homepageTitle {font-size:20}}
+.scheduledTopic {font-weight:bold; color:#990000}
+.pdfLink {font-size:13}
+
+/* For polling page */
+#question { font-size: 24px; }
+#answers div { border: 3px solid #808080; margin-top: -3px; padding: 40px 20px 40px 20px;}
+.pollInput { width: 100%; margin-bottom: 2em; padding: .5em 0 .5em 0; }
+#answers .pollSubmit {
+  color:#08233e;
+  background: #A0D4D8;
+  font-weight: bold;
+  border:2px solid #808080;
+  padding: 10px 5px 10px 5px;
+  max-width: 150px;
+  text-align: center;
+  -moz-border-radius:10px;-webkit-border-radius:10px;border-radius:10px;
+  cursor:pointer;
+}
+
+table.results {
+}
+table.results td {
+  border: 1px solid #000;
+  border-collapse: collapse;
+}
+table.results thead {
+    font-weight: bold;
+}
+table.results tr td:first-child {
+    font-weight: bold;
+    margin: 0px
+}
+
+
+.float-right {float: right}
+.float-left {float: left}
+
+#disclaimer {color: #cc6600 }

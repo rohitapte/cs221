@@ -1,0 +1,3 @@
+3D Convolutional Neural Network for Object Recognition - Interesting project. Taking a well established concept (2D image recognition) and extending it.
+A Deep Learning Approach to Anomaly Based Threat Detection In Network Traffic Flows - Tacking unbalanced datgasets present unique challenges in Machine learning so I liked this idea.
+AI Agent for Othello Game - I played this game as a child so it was interesting to see someone write an algorithm to play this. 

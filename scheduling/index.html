@@ -1,0 +1,602 @@
+<head>
+  <title>Course Scheduling</title>
+  <script src="plugins/main.js"></script>
+  <script src="grader-all.js"></script>
+  <style type="text/css">
+    .alert {
+        background-color: #fcf8e3;
+        border: 1px solid #faebcc;
+    }
+    .alert:not(ol) {
+        padding-top: 1em;
+        padding-bottom: 1em;
+    }
+    .hint {
+        font-style: italic;
+    }
+    td.consistent {
+        color: green;
+    }
+  </style>
+</head>
+
+<body onload="onLoad('scheduling', 'Zhi Bie', 1)">
+
+<div id="assignmentHeader"></div>
+<ol class="problem alert">
+    <li>
+        There will be a lot of reading in this assignment. Be patient.
+        It's worth your time! :)
+    </li>
+    <li><strong>Start early</strong>. <a href="https://piazza.com/class/ir01sqg5rohnt">Ask questions</a>. Have fun.</li>
+</ol>
+
+<p>
+    <img class="float-right" src="calendar.jpg" style="width:300px;margin-left:10px;margin-right:20px" alt="calendar" />
+</p>
+
+<p> What courses should you take in a given quarter?  Answering this question
+requires balancing your interests, satisfying prerequisite chains, graduation
+requirements, availability of courses; this can be a complex tedious process.
+In this assignment, you will write a program that does automatic course
+scheduling for you based on your preferences and constraints.
+The program will cast the course scheduling problem (CSP) as a constraint
+satisfaction problem (CSP) and then use backtracking search to solve that CSP
+to give you your optimal course schedule.
+</p>
+
+<p>
+You will first get yourself familiar with CSP by doing warmup exercises in Problem 0.
+In Problem 1, you will implement two of the three heuristics you learned from the
+lectures that will make CSP solving much faster.
+In problem 2, you will add a helper function to reduce $n$-ary factors to
+unary and binary factors.
+Lastly, in Problem 3, you will create the course scheduling CSP
+and solve it using the code from previous parts.
+</p>
+
+<!--
+    Problem 0
+-->
+<div class="problemTitle">Problem 0: Warmup</div>
+<ol class="problem">
+
+<li class="writeup" id="0a">
+Let's create a CSP.
+Suppose you have $n$ light bulbs, where each light bulb $i = 1, \dots, n$ is initially off.
+You also have $m$ buttons which control the lights.
+For each button $j = 1, \dots, m$, we know the subset $T_j \subseteq \{ 1, \dots,
+n \}$ of light bulbs that it controls.
+When button $j$ is pressed, it toggles the state of each light bulb in $T_j$
+(For example, if $3 \in T_j$ and light bulb 3 is off, then after the button is pressed,
+light bulb 3 will be on, and vice versa).
+<p>
+Your goal is to turn on all the light bulbs by pressing a subset of the buttons.
+Construct a CSP to solve this problem.
+Your CSP should have $m$ variables and $n$ constraints.
+<em>For this problem only</em>, you can use $n$-ary constraints.
+Describe your CSP precisely and concisely.
+You need to specify the variables with their domain,
+and the constraints with their scope and expression.
+Make sure to include $T_j$ in your answer.
+</p>
+</li>
+
+<li class="writeup" id="0b">
+  Let's consider a simple CSP with 3 variables and 2 binary factors:
+<p><img src="0-a.png" alt="0a - fancy CSP" /></p>
+
+where $X_1,X_2,X_3 \in \{0,1\}$ and $t_1, t_2$ are <a href="http://en.wikipedia.org/wiki/Exclusive_or">XOR</a> functions (that is $t_1(X) = x_1 \bigoplus x_2$ and $t_2(X) = x_2 \bigoplus x_3$).
+
+<ol style="list-style-type:lower-roman">
+    <li>How many consistent assignments are there for this CSP?</li>
+    <li>To see why variable ordering is important, let's use backtracking search to solve the CSP
+    <em>without using any heuristics (MCV, LCV, AC-3) or lookahead</em>.
+    How many times will <code>backtrack()</code> be called to get all consistent assignments
+    if we use the fixed ordering $X_1,X_3,X_2$? Draw the call stack for <code>backtrack()</code>.
+
+    (You should use the Backtrack algorithm from the slides.
+    The initial arguments are $x=\emptyset$, $w=1$, and the original Domain.)
+    <p>In the code, this will be <code>BacktrackingSearch.numOperations</code>.</p>
+    </li>
+    <li>To see why lookahead can be useful, let's do it again with the ordering $X_1,X_3,X_2$ and AC-3. How many times will Backtrack be called to get all consistent assignments? Draw the call stack for <code>backtrack()</code>. 
+</ol>
+</li>
+
+<li class="code" part="0c">Now let's consider a general case: given a factor graph with $n$ variables $X_1,...,X_n$ and $n-1$ binary factors $t_1,...,t_{n-1}$ where $X_i \in \{0,1\}$ and $t_i(X) = x_i \bigoplus x_{i+1}$. Note that the CSP has a chain structure. Implement <code>create_chain_csp()</code> by creating a generic chain CSP with XOR as factors.
+    <p><strong>Note</strong>: We've provided you with a CSP implementation
+    in <code>util.py</code> which supports unary and binary factors. For
+    now, you don't need to understand the implementation, but please read the
+    comments and get yourself familiar with the CSP interface. For this
+    problem, you'll need to use <code>CSP.add_variable()</code> and
+    <code>CSP.add_binary_factor()</code>. 
+    </p>
+</li>
+</ol>
+
+<!--
+    Problem 1
+-->
+<div class="problemTitle">Problem 1: CSP solving</div>
+
+<p>
+So far, we've only worked with unweighted CSPs, where $f_j(x)\in\{0,1\}$.
+In this problem, we will work with weighted CSPs,
+which associates a weight for each assignment $x$ based on the product of $m$ factor functions $f_1, \dots, f_m$:
+$$\text{Weight}(x) = \prod^m_{j=1}f_j(x)$$
+where each factor $f_j(x)\geq 0$.
+Our goal is to find the assignment(s) $x$ with the <em>highest</em> weight.
+As in problem 0, we will assume that each factor is either a unary factor (depends on exactly one variable)
+or a binary factor (depends on exactly two variables).
+</p>
+
+<p>
+For weighted CSP construction, you can refer to the CSP examples we provided
+in <code>util.py</code> for guidance (<code>create_map_coloring_csp()</code> and
+<code>create_weighted_csp()</code>).
+You can try these examples out by running
+</p>
+
+<pre>python run_p1.py</pre>
+
+<p>
+Notice we are already able to solve the CSPs, because in <code>submission.py</code>,
+a basic backtracking search is already implemented.
+Recall that backtracking search operates over partial assignments
+and associates each partial assignment with a weight, which is the product of all the factors
+that depend only on the assigned variables.
+When we assign a value to a new variable $X_i$, we multiply in all the factors
+that depend only on $X_i$ and the previously assigned variables.
+The function <code>get_delta_weight()</code> returns the contribution
+of these new factors based on the <code>unaryFactors</code> and
+<code>binaryFactors</code>.
+An important case is when <code>get_delta_weight()</code> returns 0.
+In this case, any full assignment that extends the new partial assignment will also be zero,
+so <i>there is no need to search further with that new partial assignment</i>.
+</p>
+
+<p>
+Take a look at <code>BacktrackingSearch.reset_results()</code> to see the other fields
+which are set as a result of solving the weighted CSP.
+You should read <code>submission.BacktrackingSearch</code> carefully to make
+sure that you understand how the backtracking search is working on the CSP.
+</p>
+
+<ol class="problem">
+
+<li class="code" id="1a">
+  Let's create a CSP to solve the n-queens problem:
+Given an $n\times n$ board, we'd like to
+place $n$ queens on this board such that no two queens are on the same row,
+column, or diagonal. Implement <code>create_nqueens_csp()</code> by <strong>
+adding $n$ variables</strong> and some number of binary factors.
+Note that the solver collects some basic
+statistics on the performance of the algorithm. You should take advantage of
+these statistics for debugging and analysis.
+You should get 92 (optimal) assignments for
+$n=8$ with exactly 2057 operations (number of calls to <code>backtrack()</code>).
+<p class="hint">Hint: If you get a larger number of operations, make sure your CSP is minimal. 
+Try to define the variables such that the size of domain is O(n).</p>
+<p class="hint">Note: Please implement the domain of variables as 'list' type in Python 
+(again, you may refer to <code>create_map_coloring_csp()</code> and
+<code>create_weighted_csp()</code> in <code>util.py</code> as examples of CSP problem implementations), 
+so you can compare the number of operations with our suggestions as a way of debugging.</p>
+</li>
+
+
+<li class="code" id="1b">
+You might notice that our search algorithm explores quite a large number of states
+even for the $8\times 8$ board. Let's see if we can do better.
+One heuristic we discussed in class is using most constrained variable (MCV):
+To choose an unassigned variable, pick
+the $X_j$ that has the fewest number of values $a$ which are consistent with the
+current partial assignment ($a$ for which <code>get_delta_weight()</code> on $X_j=a$ returns a non-zero value).
+
+Implement this heuristic in
+<code>get_unassigned_variable()</code> under the condition <code>self.mcv = True</code>.
+It should take you exactly 1361 operations to find all optimal assignments for 8 queens CSP &mdash; that's 30% fewer!
+
+<p> Some useful fields: </p>
+<ul>
+    <li><code>csp.unaryFactors[var][val]</code> gives the unary factor value.</li>
+    <li><code>csp.binaryFactors[var1][var2][val1][val2]</code> gives the binary factor value. Here, <code>var1</code> and <code>var2</code> are variables and <code>val1</code> and <code>val2</code>
+are their corresponding values.</li>
+    <li>In <code>BacktrackingSearch</code>, if <code>var</code> has been assigned a value, you can retrieve it using <code>assignment[var]</code>. Otherwise <code>var</code> is not in <code>assignment</code>.</li>
+</ul>
+
+<li class="code" id="1c">
+The previous heuristics looked only at the local effects of a variable or value.
+Let's now implement arc consistency (AC-3) that we discussed in lecture.
+After we set variable $X_j$ to value $a$, we
+remove the values $b$ of all neighboring variables $X_k$ that could cause
+arc-inconsistencies.
+If $X_k$'s domain has changed, we use $X_k$'s domain to remove values from the
+domains of its neighboring variables.
+This is repeated until no domain can be updated.
+Note that this may significantly reduce your branching factor, although at some cost.
+In <code>backtrack()</code> we've implemented code which copies and restores domains
+for you. Your job is to fill in <code>arc_consistency_check()</code>.
+
+<p>You should make sure that your existing MCV
+implementation is compatible with your AC-3 algorithm as we will be using all
+three heuristics together during grading. </p>
+<p>With AC-3 enabled, it should take you
+769 operations only to find all optimal assignments to 8 queens CSP &mdash; That is almost
+45% fewer even compared with MCV!
+</p>
+<strong>Take a deep breath! This part requires time and effort to implement &mdash; be patient.</strong>
+<p class="hint">
+Hint 1: documentation for <code>CSP.add_unary_factor()</code> and
+<code>CSP.add_binary_factor()</code> can be helpful.<br>Hint 2: although AC-3 works
+recursively, you may implement it iteratively. Using a queue might be a good idea. <code>li.pop(0)</code> removes and returns the first element for a python list <code>li</code>. </p>
+</li>
+
+</ol>
+
+<!--
+    Problem 2
+-->
+<div class="problemTitle">Problem 2: Handling $n$-ary factors</div>
+<p>
+So far, our CSP solver only handles unary and binary factors,
+but for course scheduling (and really any non-trivial application),
+we would like to define factors that involve more than two variables.
+It would be nice if we could have a general way of reducing $n$-ary constraint to unary and binary constraints.
+In this problem, we will do exactly that for two types of $n$-ary constraints.
+</p>
+<p id="get_or_var">
+Suppose we have boolean variables $X_1, X_2, X_3$, where $X_i$ represents whether the $i$-th course is taken.
+Suppose we want to enforce the constraint that $Y = X_1 \vee X_2 \vee X_3$, that is,
+$Y$ is a boolean representing whether at least one course has been taken.
+For reference, in <code>util.py</code>, the function <code>get_or_variable()</code> does such a reduction.
+It takes in a list of variables and a target value, and returns a boolean variable with
+domain <code>[True, False]</code> whose value is constrained to the condition of having
+at least one of the variables assigned to the target value.
+For example, we would call <code>get_or_variable()</code> with
+arguments $(X_1,X_2,X_3,\text{True})$, which would return a new (auxiliary)
+variable $X_4$, and then add another
+constraint $[X_4=\text{True}]$.
+</p>
+
+<p>
+The second type of $n$-ary factors is constraints on the sum over $n$ variables. You are
+going to implement reduction of this type but let's first look at a simpler problem to get started:
+</p>
+
+<ol class="problem">
+<li class="writeup" id="2a">
+  Suppose we have a CSP with three variables $X_1, X_2, X_3$ with the same domain
+    $\{0,1,2\}$ and a ternary constraint $[X_1 + X_2 + X_3 \le K]$.
+How can we reduce this CSP to one with only unary and/or binary constraints?
+Explain what auxiliary variables we need to introduce, what their domains are,
+what unary/binary factors you'll add, and why your scheme works.
+Add a graph if you think that'll better explain your scheme.
+<p class="hint">
+Hint: draw inspiration from the example of enforcing $[X_i=1\ \text{for exactly one}\ i]$
+which Percy did in the lecture.
+</p>
+</li>
+
+<li class="code" id="2b">
+Now let's do the general case in code: implement <code>get_sum_variable()</code>,
+which takes in a sequence of non-negative integer-valued variables
+and returns a variable whose value is constrained to equal the sum of the variables.
+You will need to access the domains of the variables passed in,
+which you can assume contain only non-negative integers.
+The parameter <code>maxSum</code> is the maximum sum possible of all the variables.
+You can use this information to decide the proper domains for your auxiliary variables.
+<p>
+How can this function be useful? Suppose we wanted to enforce the constraint $[X_1 + X_2 + X_3 \le K]$.
+We would call <code>get_sum_variable()</code> on $(X_1,X_2,X_3)$ to get some auxiliary
+variable $Y$, and then add the constraint $[Y \le K]$. Note: You don't have to implement the $\le$ constraint for this part.
+</li>
+</ol>
+
+<!--
+    Problem 3
+-->
+<div class="problemTitle">Problem 3: Course Scheduling</div>
+
+<p>
+In this problem, we will apply your weighted CSP solver to the problem of course
+scheduling.
+We have scraped a subset of courses that are offered from Stanford's
+Bulletin. For each course in this dataset,
+we have information on which quarters it is offered,
+the prerequisites (which may not be fully accurate due to
+ambiguity in the listing), and the range of units allowed.
+You can take a look at all the courses in <code>courses.json</code>.
+Please refer to
+<code>util.Course</code> and <code>util.CourseBulletin</code> for more information.
+</p>
+<p>
+To specify a desired course plan, you would need to provide a <i>profile</i>
+which specifies your constraints and preferences for courses.
+A profile is specified in a text file (see <code>profile*.txt</code> for examples).
+The profile file has four sections:
+<ul>
+  <li>The first section specifies a fixed minimum and maximum
+(inclusive) number of units you need to take for each quarter.
+For example:
+<p><pre>
+minUnits 0
+maxUnits 3
+</pre></p>
+<li>In the
+second section, you <code>register</code> for the quarters that you want
+to take your courses in.  For example,
+<p><pre>
+register Aut2017
+register Win2018
+register Spr2018
+</pre></p>
+would sign you up for this academic year.
+The quarters need not to be contiguous, but they must follow the
+exact format <code>XxxYYYY</code> where <code>Xxx</code> is one of <code>Aut, Win, Spr, Sum</code>
+and <code>YYYY</code> is the year.
+<li>
+The third section specifies the list of courses that you've taken in the
+past and elsewhere using the <code>taken</code> keyword.
+For example, if you're in CS221, this is probably what you would put:
+<p><pre>
+taken CS103
+taken CS106B
+taken CS107
+taken CS109
+</pre></p>
+<li>
+The last section
+is a list of courses that you would like to take during the registered quarters,
+specified using <code>request</code>.
+For example, two basic requests would look like this:
+<p><pre>
+request CS224N
+request CS229
+</pre></p>
+Not every request must be fulfilled, and indeed, due to the additional constraints
+described below, it is possible that not all of them can actually be fulfilled.
+</ul>
+</p>
+<p>
+<b>Constrained requests.</b>
+To allow for more flexibility in your preferences,
+we allow some freedom to customize the requests:
+<ul>
+<li>
+You can request to take exclusively one of several
+courses but not sure which one, then specify:
+</p>
+<pre id="sample-request">request CS229 or CS229A or CS229T</pre>
+<p>
+Note that these courses do not necessarily have to be offered in the same
+quarter. The final schedule can have at most one of these three courses. <b>Each
+course can only be requested at most once.</b>
+</p>
+
+<li>
+<p>
+If you want to take a course in one of a specified set of quarters, use the
+<code>in</code> modifier.
+For example, if you want to take one of CS221 or CS229 in either Aut2017 <b>or</b> Sum2018, do:
+<pre>request CS221 or CS229 in Aut2017,Sum2018</pre>
+<p>
+If you do not specify any quarters, then the course can be taken in any quarter.
+</p>
+
+<li>
+Another operator you can apply is <code>after</code>, which specifies
+that a course must be taken after another one.
+For example, if you want to choose one of CS221 or CS229 and take it after both CS109 <b>and</b> CS161, add:
+<pre>request CS221 or CS229 after CS109,CS161</pre>
+Note that this implies that if you take CS221 or CS229, then you must take both CS109 and CS161.
+In this case, we say that CS109 and CS161 are <code>prereqs</code> of this request.
+(Note that there's <strong>no space</strong> after the comma.)
+<p>
+If you request
+course A and B (separately), and A is an official prerequisite of B based on
+the <code>CourseBulletin</code>,
+we will automatically add A as a prerequisite for B; that is,
+typing <code>request B</code> is equivalent to <code>request B after A</code>.
+Note that if B is a prerequisite of A, to request A,
+you must either request B or declare you've taken B before.
+
+<li>
+<p>
+Finally, the last operator you can add is <code>weight</code>, which adds
+non-negative weight to each request. All requests have a default weight value of 1.
+Requests with higher weight should be preferred by your
+CSP solver. Note that you can combine all of the aforementioned operators into
+one as follows (again, no space after comma):
+<pre id="sample-request">request CS221 or CS229 in Win2017,Win2018 after CS131 weight 5</pre>
+</p>
+</ul>
+
+<p>
+Each <code>request</code> line in your profile is represented in code
+as an instance of the <code>Request</code> class (see <code>util.py</code>).
+For example, the request above would have the following fields:
+<ul>
+    <li><code>cids</code> (course IDs that you're choosing one of) with value <code>['CS221', 'CS229']</code></li>
+    <li><code>quarters</code> (that you're allowed to take the courses) with value <code>['Win2017', 'Win2018']</code></li>
+    <li><code>prereqs</code> (course IDs that you must take before) with value <code>['CS131']</code></li>
+    <li><code>weight</code> (preference) with value <code>5.0</code></li>
+</ul>
+<p>
+It's important to note that a request does not have to be fulfilled,
+<em>but if it is</em>,
+the constraints specified by the various operators <code>after,in</code> must
+also be satisfied.
+
+<p>
+You shall not worry about parsing the profiles because
+we have done all the parsing of the bulletin and profile for you,
+so all you need to work with is the collection of <code>Request</code>
+objects in <code>Profile</code> and <code>CourseBulletin</code>
+to know when courses are offered and the number of units of courses.
+</p>
+
+Well, that's a lot of information! Let's open a python shell and see them in action:
+
+<pre>
+import util
+# load bulletin
+bulletin = util.CourseBulletin('courses.json')
+# retrieve information of CS221
+cs221 = bulletin.courses['CS221']
+print cs221
+# look at various properties of the course
+print cs221.cid
+print cs221.minUnits
+print cs221.maxUnits
+print cs221.prereqs  # the prerequisites
+print cs221.is_offered_in('Aut2017')
+print cs221.is_offered_in('Win2018')
+
+# load profile from profile_example.txt
+profile = util.Profile(bulletin, 'profile_example.txt')
+# see what it's about
+profile.print_info()
+# iterate over the requests and print out the properties
+for request in profile.requests:
+    print request.cids, request.quarters, request.prereqs, request.weight
+</pre>
+
+<p>
+<b>Solving the CSP.</b>
+Your task is to take a profile and bulletin and construct a CSP.
+We have started you off with code in <code>SchedulingCSPConstructor</code>
+that constructs the core variables of the CSP as well as some basic constraints.
+The variables are all pairs of requests and registered quarters <code>(request, quarter)</code>,
+and the value of such a variable is one of the course IDs in that Request
+or <code>None</code>, which indicates none of the courses should be taken in that
+quarter. We will add auxiliary variables later.
+We have also implemented some basic constraints:
+<code>add_bulletin_constraints()</code>, which enforces that a course can only be
+taken if it's offered in that quarter (according to the bulletin), and
+<code>add_norepeating_contstraints()</code>,
+which constrains that no course can be taken more than once.</p>
+
+<p>You should take a look at <code>add_bulletin_constraints()</code> and
+<code>add_norepeating_contstraints()</code> to get a basic understanding
+how the CSP for scheduling is represented. Nevertheless, we'll highlight
+some important details to make it easier for you to implement:
+</p>
+
+<ul class="alert">
+    <li>The existing variables are tuples of <code>(request, quarter)</code>
+        where <code>request</code> is a <code>Request</code> object
+        (like <a href="#sample-request">the one shown above</a>)
+        and <code>quarter</code> is a <code>str</code> representing a quarter
+        (e.g. <code>'Aut2017'</code>). For detail please look at
+        <code>SchedulingCSPConstructor.add_variables()</code>.
+    </li>
+    <li>The domain of each variable <code>(request, quarter)</code> is the course IDs of the request
+        <strong>plus</strong> <code>None</code> (e.g. <code>['CS221',
+            'CS229', None]</code>).
+        When the value <code>cid</code> is
+        <code>None</code>, this means no course is scheduled for this request.
+        <strong>Always remember to check if <code>cid</code> is
+            <code>None</code></strong>.
+    </li>
+    <li>The domain for <code>quarter</code> is all possible quarters
+        (<code>self.profile.quarters</code>, e.g. <code>['Win2016', 'Win2017']</code>).
+    </li>
+    <li>Given a course ID <code>cid</code>, you can get the corresponding
+        <code>Course</code> object by <code>self.bulletin.courses[cid]</code>.</li>
+</ul>
+
+<ol class="problem">
+
+<li class="code" id="3a">
+Implement the <code>add_quarter_constraints()</code>. This is when your
+profile specifies which quarter(s) you want your requested courses to be taken in.
+This is not saying that one of the courses must be taken,
+<em>but if it is</em>, then it must be taken in any one of the specified quarters.
+Also note that this constraint will apply to all courses in that request.
+
+<p>We have written a <code>verify_schedule()</code>
+function in <code>grader.py</code> that determines if your schedule satisfies all
+of the given constraints. Note that since we are not dealing with units yet, it
+will print <code>None</code> for the number of units of each course.
+For profile3a.txt, you should find 3 optimal assignments with weight 1.0.</p>
+</li>
+<li class="code" id="3b">
+Let's now add the unit constraints in <code>add_unit_constraints()</code>.
+(1) You must ensure that the sum of units per quarter for your schedule are within
+the min and max threshold inclusive.
+You should use <code>get_sum_variable()</code>.
+(2) In order for our solution extractor to
+obtain the number of units, for every course,
+you must add a variable <code>(courseId, quarter)</code>
+to the CSP taking on a value equal to the number of units being taken for that
+course during that quarter. When the course is not taken during that quarter,
+the unit should be 0.
+<b>NOTE:</b> Each grader test only tests the function you are asked to
+implement. To test your CSP with multiple constraints you can use
+<code>run_p3.py</code> and changing the constraints that you want to add.
+For profile3b.txt, you should find 15 optimal assignments with weight 1.0.
+<p class="hint">Hint: If your code times out, your <code>maxSum</code> passed
+to <code>get_sum_variable()</code> might be too large.</p>
+</li>
+<li class="writeup" id="3c">
+Now try to use the course scheduler for the winter and spring (and next year if applicable).
+Create your own <code>profile.txt</code> and then run the course scheduler:
+<pre>
+python run_p3.py profile.txt
+</pre>
+You might want to turn on the appropriate heuristic flags to speed up the
+computation. Does it produce a reasonable course schedule?
+Please include your <code>profile.txt</code> and the best schedule in your writeup;
+we're curious how it worked out for you!
+</p>
+</li>
+</ol>
+<br/>
+
+<!--
+    Problem 4
+-->
+<div class="problemTitle">Problem 4: Weighted CSPs with notable patterns (extra credit)</div>
+<p>
+Want more challenges about CSP? Here we go. :D
+</p>
+<p>
+Suppose we have a weighted CSP with variables $X_1, \dots, X_n$
+with domains $\text{Domain}_i = \{ 1, \dots, K \}$.
+We have a set of basic factors which depend only on adjacent pairs
+of variables in the same way: there is some function $g$ such that
+$f_i(x) = g(x_i, x_{i+1})$ for $i = 1, \dots, n-1$.
+In addition, we have a small set of <i>notable patterns</i> $P$,
+where each $p \in P$ is a sequence of elements from the domain.
+</p>
+<p>
+Let $n_p$ be the number of times that $p$ occurs in an assignment $x = (x_1, \dots, x_n)$
+as a consecutive sequence.
+Define the weight of an assignment $x$ to be
+$\displaystyle \prod_{i=1}^{n-1} f_i(x) \prod_{p \in P} \gamma^{n_p}.$
+Intuitively, we multiply the weight by $\gamma$ every time a notable pattern appears.
+</p>
+<p>
+For example, suppose $n = 4$, $\gamma = 7$, $g(a, b) = 5[a = b] + 1[a \neq b]$
+and $P = \{ [1, 3, 3], [1, 2, 3] \}$.
+Then the assignment $x = [1, 3, 3, 2]$ has weight $(1 \cdot 5 \cdot 1) \cdot (7^1 \cdot 7^0) = 35$.
+</p>
+
+<ol class="problem">
+<li class="writeup" id="4a">
+  If we were to include the notable patterns as factors into the CSP,
+what would be the worst case treewidth?
+(You can assume each $p$ has a maximum length of $n$.)
+</li>
+
+<li class="writeup" id="4b">
+The treewidth doesn't really tell us the true complexity of the problem.
+Devise an efficient algorithm to compute the maximum weight assignment.
+You need to describe
+your algorithm in enough detail but don't need to implement it.
+Analyze your algorithm's time and space complexities.
+You'll get points only if your algorithm is much better than the naive solution.
+</li>
+</ol>
+
+</body>

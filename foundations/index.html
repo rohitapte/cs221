@@ -1,0 +1,188 @@
+<head>
+  <title>Foundations</title>
+  <script src="plugins/main.js"></script>
+  <script src="grader-all.js"></script>
+</head>
+
+<body onload="onLoad('foundations', 'Bryan He', 1)">
+
+<div id="assignmentHeader"></div>
+
+<p>
+Welcome to your first CS221 assignment!
+The goal of this assignment is to sharpen your math and programming skills
+needed for this class.  If you meet the prerequisites, you should find these
+problems relatively innocuous.  Some of these problems will occur again
+as subproblems of later homeworks, so make sure you know how to do them.
+</p>
+
+<!------------------------------------------------------------>
+<div class="problemTitle">Problem 1: Optimization and probability</div>
+
+<p>
+In this class, we will cast a lot of AI problems as optimization problems, that is, finding the best
+solution in a rigorous mathematical sense.
+At the same time, we must be adroit at coping with uncertainty in the world,
+and for that, we appeal to tools from probability.
+</p>
+
+<ol class="problem">
+
+<li class="writeup" id="1a">
+Let $x_1, \dots, x_n$ be real numbers representing positions on a number line.
+Let $w_1, \dots, w_n$ be positive real numbers representing the importance of each of these positions.
+Consider the quadratic function: $f(\theta) = \frac{1}{2} \sum_{i=1}^n w_i (\theta - x_i)^2$.
+What value of $\theta$ minimizes $f(\theta)$?
+You can think about this problem as trying to find the point $\theta$ that's not too far
+away from the $x_i$'s.
+Over time, hopefully you'll appreciate how nice quadratic functions are to minimize.
+What problematic issues could arise if some of the $w_i$'s are negative?
+</li>
+
+<li class="writeup" id="1b">
+In this class, there will be a lot of sums and maxes.
+Let's see what happens if we switch the order.
+Let $f(\mathbf x) = \sum_{i=1}^d \max_{s \in \{1,-1\}} s x_i$
+and $g(\mathbf x) = \max_{s \in \{1,-1\}} \sum_{i=1}^d s x_i$,
+where $\mathbf x = (x_1, \dots, x_d) \in \mathbb{R}^d$ is a real vector.
+Does $f(\mathbf x) \le g(\mathbf x)$, $f(\mathbf x) = g(\mathbf x)$, or $f(\mathbf x) \ge g(\mathbf x)$ hold for all $\mathbf x$?
+Prove it.
+<br/>Hint: You may find it helpful to refactor the expressions so they
+are maximizing the same quantity over different sized sets.
+</li>
+
+<li class="writeup" id="1c">
+Suppose you repeatedly roll a fair six-sided die until you roll a $1$ (and then you stop).
+Every time you roll a $2$, you lose $a$ points, and every time you roll a 6, you win $b$ points.
+What is the expected number of points (as a function of $a$ and $b$) you will have when you stop?
+</li>
+
+<li class="writeup" id="1d">
+Suppose the probability of a coin turning up heads is $0 \lt p \lt 1$,
+and that we flip it 7 times and get $\{ \text{H}, \text{H}, \text{T}, \text{H}, \text{T} , \text{T}, \text{H}  \}$.
+We know the probability (likelihood) of obtaining this
+sequence is $L(p) = p p (1-p) p (1-p) (1-p) p = p^4(1-p)^3$.
+Now let's go back and ask the question: what value of $p$ maximizes $L(p)$?
+What is an intuitive interpretation of this value of $p$?
+<br/>Hint: Consider taking the derivative of $\log L(p)$. You can also directly take the derivative of $L(p)$, but it is cleaner and more natural to differentiate $\log L(p)$. You can verify for yourself
+that the value of $p$ which maximizes $\log L(p)$ must also maximize $L(p)$ (you are not required to prove this in your solution).
+</li>
+
+<li class="writeup" id="1e">
+Let's practice taking gradients,
+which is a key operation for being able to optimize continuous functions.
+For $\mathbf w \in \mathbb R^d$ (represented as a column vector) and constants $\mathbf a_i, \mathbf b_j \in \mathbb R^d$ (also represented as column vectors) and $\lambda \in \mathbb R$, define
+the scalar-valued function
+$$f(\mathbf w) = \sum_{i=1}^n \sum_{j=1}^n (\mathbf a_i^\top \mathbf w - \mathbf b_j^\top \mathbf w)^2 + \lambda \|\mathbf w\|_2^2,$$
+where the vector is $\mathbf w = (w_1, \dots, w_d)^\top$ and $\|\mathbf w\|_2 = \sqrt{\sum_{k=1}^d w_k^2}$ is known as the $L_2$ norm.
+Compute the gradient $\nabla f(\mathbf w)$. 
+<br/>Recall: the gradient is a $d$-dimensional vector of the partial derivatives with respect to each $w_i$:
+$$\nabla f(\mathbf w) = \left(\frac{\partial f(\mathbf w)}{\partial w_1}, \dots \frac{\partial f(\mathbf w)}{\partial w_d}\right)^\top.$$
+If you're not comfortable with vector calculus, first warm up by working out this problem using scalars in
+place of vectors and derivatives in place of gradients.
+Not everything for scalars goes through for vectors, but the two should at least be consistent with each other (when $d=1$).
+Do not write out summation over dimensions, because that gets tedious.
+</li>
+
+</ol>
+
+<!------------------------------------------------------------>
+<div class="problemTitle">Problem 2: Complexity</div>
+
+<p>
+When designing algorithms, it's useful to be able to do quick back of the
+envelope calculations to see how much time or space an algorithm needs.
+Hopefully, you'll start to get more intuition for this by being exposed
+to more types of problems.
+</p>
+
+<ol class="problem">
+
+<li class="writeup" id="2a">
+Suppose we have an image of a human face consisting of $n \times n$ pixels.
+In our simplified setting, a face consists of two eyes, two ears, one nose, and one mouth,
+each represented as an arbitrary axis-aligned rectangle (i.e. the axes of the
+rectangle are aligned with the axes of the image).  As we'd like
+to handle Picasso portraits too, there are no constraints on the location or
+size of the rectangles.
+How many possible faces (choice of its component rectangles) are there?
+In general, we only care about asymptotic complexity,
+so give your answer in the form of $O(n^c)$ or $O(c^n)$ for some integer $c$.
+</li>
+
+<li class="writeup" id="2b">
+Suppose we have an $n\times n$ grid.
+We start in the upper-left corner (coordinate $(1,1)$), and we would like to reach the lower-right corner (coordinate $(n,n)$) by taking single steps down and right.
+Define a function $c(i, j)$ to be the cost of touching square $(i, j)$, and assume it takes constant time to compute.
+Give an algorithm for computing the minimum cost in the most efficient way.
+What is the runtime (just give the big-O)?
+</li>
+
+<li class="writeup" id="2c">
+Suppose we have a staircase with $n$ steps (we start on the ground, so we need $n$ total steps to reach the top).
+We can take as many steps forward at a time, but we will never step backwards.
+How many ways are there to reach the top?
+Give your answer as a function of $n$.
+For example, if $n = 3$, then the answer is $4$.
+The four options are the following:
+(1) take one step, take one step, take one step
+(2) take two steps, take one step
+(3) take one step, take two steps
+(4) take three steps.
+</li>
+
+<li class="writeup" id="2d">
+Consider the scalar-valued function $f(\mathbf w)$ from Problem 1e.
+Devise a strategy that first does preprocessing in $O(n d^2)$ time,
+and then for any given vector $\mathbf w$,
+takes $O(d^2)$ time instead to compute $f(\mathbf w)$.
+<br/>Hint: Refactor the algebraic expression; this is a classic trick used in machine learning.
+Again, you may find it helpful to work out the scalar case first.
+</li>
+
+</ol>
+
+<!------------------------------------------------------------>
+<div class="problemTitle">Problem 3: Programming</div>
+
+<p>
+In this problem, you will implement a bunch of short functions.  The main
+purpose of this exercise is to familiarize yourself with Python,
+but as a bonus, the functions that you will implement will come in handy in
+subsequent homeworks.
+</p>
+
+<p>
+If you're new to Python, the following provide pointers to various
+tutorials and examples for the language:
+<ul>
+  <li><a href="http://wiki.python.org/moin/BeginnersGuide/Programmers">Python for Programmers</a></li>
+  <li><a href="http://wiki.python.org/moin/SimplePrograms">Example programs of increasing complexity</a></li>
+</ul>
+</p>
+<ol class="problem">
+
+<li class="code" id="3a">
+  Implement <code>findAlphabeticallyLastWord</code> in <code>submission.py</code>.
+</li>
+<li class="code" id="3b">
+  Implement <code>euclideanDistance</code> in <code>submission.py</code>.
+</li>
+<li class="code" id="3c">
+  Implement <code>mutateSentences</code> in <code>submission.py</code>.
+</li>
+<li class="code" id="3d">
+  Implement <code>sparseVectorDotProduct</code> in <code>submission.py</code>.
+</li>
+<li class="code" id="3e">
+  Implement <code>incrementSparseVector</code> in <code>submission.py</code>.
+</li>
+<li class="code" id="3f">
+  Implement <code>findSingletonWords</code> in <code>submission.py</code>.
+</li>
+<li class="code" id="3g">
+  Implement <code>computeLongestPalindromeLength</code> in <code>submission.py</code>.
+</li>
+
+</ol>
+</body>
